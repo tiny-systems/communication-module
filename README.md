@@ -1,2 +1,2 @@
 # Tiny Systems Example module
-Example module for the Tiny Systems platform.
+The module collects email, instant messengers and other components.
