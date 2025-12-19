@@ -164,13 +164,11 @@ func (t *Component) Ports() []module.Port {
 		{
 			Name:          module.SettingsPort,
 			Label:         "Settings",
-			Source:        true,
 			Configuration: Settings{},
 		},
 		{
-			Name:   RequestPort,
-			Label:  "Request",
-			Source: true,
+			Name:  RequestPort,
+			Label: "Request",
 			Configuration: Request{
 				Body:        "Email text",
 				ContentType: "text/html",
@@ -193,7 +191,7 @@ func (t *Component) Ports() []module.Port {
 			Position:      module.Right,
 			Name:          ResponsePort,
 			Label:         "Response",
-			Source:        false,
+			Source:        true,
 			Configuration: Response{},
 		})
 	}
@@ -206,7 +204,7 @@ func (t *Component) Ports() []module.Port {
 		Position:      module.Bottom,
 		Name:          ErrorPort,
 		Label:         "Error",
-		Source:        false,
+		Source:        true,
 		Configuration: Error{},
 	})
 }

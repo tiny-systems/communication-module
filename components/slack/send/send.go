@@ -90,7 +90,7 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 		})
 	}
 
-	if err == nil && t.settings.EnableSuccessPort {
+	if t.settings.EnableSuccessPort {
 		return responseHandler(ctx, ResponsePort, Response{
 			Request: in,
 			Sent:    in.Message,
@@ -105,13 +105,11 @@ func (t *Component) Ports() []module.Port {
 		{
 			Name:          module.SettingsPort,
 			Label:         "Settings",
-			Source:        true,
 			Configuration: Settings{},
 		},
 		{
-			Name:   RequestPort,
-			Label:  "Request",
-			Source: true,
+			Name:  RequestPort,
+			Label: "Request",
 			Configuration: Request{
 				Message: Message{
 					Text: "Message to send",
@@ -125,7 +123,7 @@ func (t *Component) Ports() []module.Port {
 			Position:      module.Right,
 			Name:          ResponsePort,
 			Label:         "Response",
-			Source:        false,
+			Source:        true,
 			Configuration: Response{},
 		})
 	}
@@ -137,7 +135,7 @@ func (t *Component) Ports() []module.Port {
 		Position:      module.Bottom,
 		Name:          ResponsePort,
 		Label:         "Error",
-		Source:        false,
+		Source:        true,
 		Configuration: Error{},
 	})
 }
