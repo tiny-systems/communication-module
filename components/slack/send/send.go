@@ -3,7 +3,9 @@ package send
 import (
 	"context"
 	"fmt"
+
 	"github.com/slack-go/slack"
+	"github.com/tiny-systems/module/api/v1alpha1"
 	"github.com/tiny-systems/module/module"
 	"github.com/tiny-systems/module/registry"
 )
@@ -62,8 +64,8 @@ func (t *Component) GetInfo() module.ComponentInfo {
 	}
 }
 
-func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) error {
-	if port == module.SettingsPort {
+func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) any {
+	if port == v1alpha1.SettingsPort {
 		in, ok := msg.(Settings)
 		if !ok {
 			return fmt.Errorf("invalid settings")
@@ -103,7 +105,7 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 func (t *Component) Ports() []module.Port {
 	ports := []module.Port{
 		{
-			Name:          module.SettingsPort,
+			Name:          v1alpha1.SettingsPort,
 			Label:         "Settings",
 			Configuration: Settings{},
 		},
