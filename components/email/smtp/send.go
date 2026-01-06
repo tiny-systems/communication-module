@@ -3,7 +3,9 @@ package smtp
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/uuid"
+	"github.com/tiny-systems/module/api/v1alpha1"
 	"github.com/tiny-systems/module/module"
 	"github.com/tiny-systems/module/registry"
 	"github.com/wneessen/go-mail"
@@ -29,8 +31,8 @@ type Recipient struct {
 type Context any
 
 type Request struct {
-	Context      Context      `json:"context,omitempty" configurable:"true" title:"Context"`
-	SmtpSettings SmtpSettings `json:"smtpSettings" required:"true" title:"SMTP Settings"`
+	Context      Context          `json:"context,omitempty" configurable:"true" title:"Context"`
+	SmtpSettings ProtocolSettings `json:"smtpSettings" required:"true" title:"SMTP Settings"`
 
 	ContentType string `json:"contentType" required:"true" title:"Content type" enum:"text/plain,text/html,application/octet-stream"`
 
@@ -41,7 +43,7 @@ type Request struct {
 	Body    string `json:"body" title:"Email body" format:"textarea"`
 }
 
-type SmtpSettings struct {
+type ProtocolSettings struct {
 	Host     string `json:"host" required:"true" minLength:"1" title:"SMTP Host"`
 	Port     int    `json:"port" required:"true" title:"SMTP Port"`
 	Username string `json:"username" title:"SMTP username" required:"true"`
@@ -118,8 +120,8 @@ func (t *Component) send(ctx context.Context, sendMsg Request) (string, error) {
 	return messageID.String(), nil
 }
 
-func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) error {
-	if port == module.SettingsPort {
+func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) any {
+	if port == v1alpha1.SettingsPort {
 		in, ok := msg.(Settings)
 		if !ok {
 			return fmt.Errorf("invalid settings")
@@ -162,7 +164,7 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 func (t *Component) Ports() []module.Port {
 	ports := []module.Port{
 		{
-			Name:          module.SettingsPort,
+			Name:          v1alpha1.SettingsPort,
 			Label:         "Settings",
 			Configuration: Settings{},
 		},
@@ -172,7 +174,7 @@ func (t *Component) Ports() []module.Port {
 			Configuration: Request{
 				Body:        "Email text",
 				ContentType: "text/html",
-				SmtpSettings: SmtpSettings{
+				SmtpSettings: ProtocolSettings{
 					Host: "smtp.domain.com",
 					Port: 587,
 				},
