@@ -23,31 +23,36 @@ const (
 	RequestPort   = "request"
 )
 
-// Settings configures the component
+// Settings configures the component - only port flags
 type Settings struct {
-	SigningSecret   string `json:"signingSecret" required:"true" title:"Signing Secret" description:"Slack app signing secret for request verification" format:"password"`
-	EnableErrorPort bool   `json:"enableErrorPort" title:"Enable Error Port" description:"Output errors to error port instead of failing"`
-	SkipVerify      bool   `json:"skipVerify" title:"Skip Verification" description:"Skip signature verification (for testing only)"`
+	EnableErrorPort bool `json:"enableErrorPort" title:"Enable Error Port" description:"Output errors to error port instead of failing"`
 }
 
 // Request is the incoming HTTP request from Slack
 type Request struct {
-	// HTTP headers needed for verification
+	Context any `json:"context,omitempty" configurable:"true" title:"Context" description:"Arbitrary context to pass through to output"`
+
+	// Credentials - from upstream (e.g., secret manager)
+	SigningSecret string `json:"signingSecret" configurable:"true" title:"Signing Secret" description:"Slack app signing secret for request verification"`
+	SkipVerify    bool   `json:"skipVerify,omitempty" configurable:"true" title:"Skip Verify" description:"Skip signature verification (for testing)"`
+
+	// HTTP request data
 	Headers map[string]string `json:"headers" title:"Headers" description:"HTTP headers from the request"`
-	// Raw body for signature verification
-	Body string `json:"body" required:"true" title:"Body" description:"Raw request body"`
+	Body    string            `json:"body" required:"true" title:"Body" description:"Raw request body"`
 }
 
 // Command is the parsed slash command
 type Command struct {
+	Context any `json:"context,omitempty" title:"Context"`
+
 	// Original request context
 	ResponseURL string `json:"responseUrl" title:"Response URL" description:"URL to send delayed responses"`
 	TriggerID   string `json:"triggerId" title:"Trigger ID" description:"ID for opening modals"`
 
 	// Command details
-	Command     string `json:"command" title:"Command" description:"The slash command used (e.g., /deploy)"`
-	Text        string `json:"text" title:"Text" description:"Text after the command"`
-	Args        []string `json:"args" title:"Args" description:"Text split into arguments"`
+	Command string   `json:"command" title:"Command" description:"The slash command used (e.g., /deploy)"`
+	Text    string   `json:"text" title:"Text" description:"Text after the command"`
+	Args    []string `json:"args" title:"Args" description:"Text split into arguments"`
 
 	// User info
 	UserID   string `json:"userId" title:"User ID" description:"Slack user ID"`
@@ -62,13 +67,14 @@ type Command struct {
 	TeamDomain string `json:"teamDomain" title:"Team Domain" description:"Slack workspace domain"`
 
 	// For routing
-	Action    string `json:"action" title:"Action" description:"First argument (e.g., 'status' from '/k8s status app')"`
-	Target    string `json:"target" title:"Target" description:"Second argument (e.g., 'app' from '/k8s status app')"`
+	Action    string   `json:"action" title:"Action" description:"First argument (e.g., 'status' from '/k8s status app')"`
+	Target    string   `json:"target" title:"Target" description:"Second argument (e.g., 'app' from '/k8s status app')"`
 	ExtraArgs []string `json:"extraArgs" title:"Extra Args" description:"Remaining arguments after action and target"`
 }
 
 // Error output
 type Error struct {
+	Context any     `json:"context,omitempty" title:"Context"`
 	Error   string  `json:"error" title:"Error"`
 	Request Request `json:"request" title:"Request"`
 }
@@ -114,17 +120,20 @@ func (c *Component) Handle(ctx context.Context, handler module.Handler, port str
 
 func (c *Component) handleRequest(ctx context.Context, handler module.Handler, req Request) error {
 	// Verify signature unless skipped
-	if !c.settings.SkipVerify {
-		if err := c.verifySignature(req); err != nil {
+	if !req.SkipVerify {
+		if err := verifySignature(req.SigningSecret, req.Headers, req.Body); err != nil {
 			return c.handleError(ctx, handler, req, fmt.Sprintf("signature verification failed: %v", err))
 		}
 	}
 
 	// Parse the command
-	cmd, err := c.parseCommand(req.Body)
+	cmd, err := parseCommand(req.Body)
 	if err != nil {
 		return c.handleError(ctx, handler, req, fmt.Sprintf("failed to parse command: %v", err))
 	}
+
+	// Pass context through
+	cmd.Context = req.Context
 
 	// Emit the parsed command
 	if result := handler(ctx, CommandPort, cmd); result != nil {
@@ -135,15 +144,15 @@ func (c *Component) handleRequest(ctx context.Context, handler module.Handler, r
 	return nil
 }
 
-func (c *Component) verifySignature(req Request) error {
-	if c.settings.SigningSecret == "" {
-		return fmt.Errorf("signing secret not configured")
+func verifySignature(signingSecret string, headers map[string]string, body string) error {
+	if signingSecret == "" {
+		return fmt.Errorf("signing secret not provided")
 	}
 
 	// Get headers (case-insensitive)
 	timestamp := ""
 	signature := ""
-	for k, v := range req.Headers {
+	for k, v := range headers {
 		lower := strings.ToLower(k)
 		if lower == "x-slack-request-timestamp" {
 			timestamp = v
@@ -166,8 +175,8 @@ func (c *Component) verifySignature(req Request) error {
 	}
 
 	// Compute expected signature
-	sigBaseString := fmt.Sprintf("v0:%s:%s", timestamp, req.Body)
-	mac := hmac.New(sha256.New, []byte(c.settings.SigningSecret))
+	sigBaseString := fmt.Sprintf("v0:%s:%s", timestamp, body)
+	mac := hmac.New(sha256.New, []byte(signingSecret))
 	mac.Write([]byte(sigBaseString))
 	expected := "v0=" + hex.EncodeToString(mac.Sum(nil))
 
@@ -178,7 +187,7 @@ func (c *Component) verifySignature(req Request) error {
 	return nil
 }
 
-func (c *Component) parseCommand(body string) (Command, error) {
+func parseCommand(body string) (Command, error) {
 	// Parse URL-encoded form data
 	params := make(map[string]string)
 	for _, pair := range strings.Split(body, "&") {
@@ -224,6 +233,7 @@ func (c *Component) parseCommand(body string) (Command, error) {
 func (c *Component) handleError(ctx context.Context, handler module.Handler, req Request, errMsg string) error {
 	if c.settings.EnableErrorPort {
 		_ = handler(ctx, ErrorPort, Error{
+			Context: req.Context,
 			Error:   errMsg,
 			Request: req,
 		})
