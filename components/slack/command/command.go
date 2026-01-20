@@ -28,17 +28,25 @@ type Settings struct {
 	EnableErrorPort bool `json:"enableErrorPort" title:"Enable Error Port" description:"Output errors to error port instead of failing"`
 }
 
-// Request is the incoming HTTP request from Slack
+// Header matches HTTP Server's header format
+type Header struct {
+	Key   string `json:"key" required:"true" title:"Key"`
+	Value string `json:"value" required:"true" title:"Value"`
+}
+
+// Request is compatible with HTTP Server's Request output
 type Request struct {
 	Context any `json:"context,omitempty" configurable:"true" title:"Context" description:"Arbitrary context to pass through to output"`
 
-	// Credentials - from upstream (e.g., secret manager)
+	// Credentials - from edge config (e.g., inject component)
 	SigningSecret string `json:"signingSecret" configurable:"true" title:"Signing Secret" description:"Slack app signing secret for request verification"`
 	SkipVerify    bool   `json:"skipVerify,omitempty" configurable:"true" title:"Skip Verify" description:"Skip signature verification (for testing)"`
 
-	// HTTP request data
-	Headers map[string]string `json:"headers" title:"Headers" description:"HTTP headers from the request"`
-	Body    string            `json:"body" required:"true" title:"Body" description:"Raw request body"`
+	// HTTP request data - matches HTTP Server Request format
+	RequestURI string   `json:"requestURI,omitempty" title:"Request URI"`
+	Method     string   `json:"method,omitempty" title:"Method"`
+	Headers    []Header `json:"headers,omitempty" title:"Headers" description:"HTTP headers from the request"`
+	Body       string   `json:"body" required:"true" title:"Body" description:"Raw request body"`
 }
 
 // Command is the parsed slash command
@@ -144,7 +152,7 @@ func (c *Component) handleRequest(ctx context.Context, handler module.Handler, r
 	return nil
 }
 
-func verifySignature(signingSecret string, headers map[string]string, body string) error {
+func verifySignature(signingSecret string, headers []Header, body string) error {
 	if signingSecret == "" {
 		return fmt.Errorf("signing secret not provided")
 	}
@@ -152,12 +160,12 @@ func verifySignature(signingSecret string, headers map[string]string, body strin
 	// Get headers (case-insensitive)
 	timestamp := ""
 	signature := ""
-	for k, v := range headers {
-		lower := strings.ToLower(k)
+	for _, h := range headers {
+		lower := strings.ToLower(h.Key)
 		if lower == "x-slack-request-timestamp" {
-			timestamp = v
+			timestamp = h.Value
 		} else if lower == "x-slack-signature" {
-			signature = v
+			signature = h.Value
 		}
 	}
 
@@ -253,9 +261,9 @@ func (c *Component) Ports() []module.Port {
 			Name:  RequestPort,
 			Label: "Request",
 			Configuration: Request{
-				Headers: map[string]string{
-					"X-Slack-Request-Timestamp": "1234567890",
-					"X-Slack-Signature":         "v0=...",
+				Headers: []Header{
+					{Key: "X-Slack-Request-Timestamp", Value: "1234567890"},
+					{Key: "X-Slack-Signature", Value: "v0=..."},
 				},
 				Body: "command=/k8s&text=status+myapp&user_id=U123&channel_id=C456",
 			},
