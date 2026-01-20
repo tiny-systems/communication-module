@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	_ "github.com/tiny-systems/communication-module/components/email/smtp"
+	_ "github.com/tiny-systems/communication-module/components/slack/command"
 	_ "github.com/tiny-systems/communication-module/components/slack/send"
 	"github.com/tiny-systems/module/cli"
 	"os"
