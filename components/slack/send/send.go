@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ComponentName = "send_slack_channel"
+	ComponentName = "slack_send"
 	ResponsePort  = "response"
 	ErrorPort     = "error"
 	RequestPort   = "request"

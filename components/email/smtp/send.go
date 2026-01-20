@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ComponentName = "smtp_send_email"
+	ComponentName = "smtp_send"
 	ResponsePort  = "response"
 	ErrorPort     = "error"
 	RequestPort   = "request"
