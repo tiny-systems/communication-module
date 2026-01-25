@@ -51,7 +51,7 @@ type Request struct {
 
 // Command is the parsed slash command
 type Command struct {
-	Context any `json:"context,omitempty" title:"Context"`
+	Context any `json:"context,omitempty" configurable:"true" title:"Context"`
 
 	// Original request context
 	ResponseURL string `json:"responseUrl" title:"Response URL" description:"URL to send delayed responses"`
@@ -82,7 +82,7 @@ type Command struct {
 
 // Error output
 type Error struct {
-	Context any     `json:"context,omitempty" title:"Context"`
+	Context any     `json:"context,omitempty" configurable:"true" title:"Context"`
 	Error   string  `json:"error" title:"Error"`
 	Request Request `json:"request" title:"Request"`
 }
