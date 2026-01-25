@@ -57,7 +57,7 @@ type Command struct {
 	Context Context `json:"context,omitempty" configurable:"true" title:"Context"`
 
 	// Original request context
-	ResponseURL string `json:"responseUrl" title:"Response URL" description:"URL to send delayed responses"`
+	ResponseURL string `json:"responseUrl" format:"uri" title:"Response URL" description:"URL to send delayed responses"`
 	TriggerID   string `json:"triggerId" title:"Trigger ID" description:"ID for opening modals"`
 
 	// Command details
