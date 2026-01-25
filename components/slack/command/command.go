@@ -23,6 +23,9 @@ const (
 	RequestPort   = "request"
 )
 
+// Context type alias for schema generation
+type Context any
+
 // Settings configures the component - only port flags
 type Settings struct {
 	EnableErrorPort bool `json:"enableErrorPort" title:"Enable Error Port" description:"Output errors to error port instead of failing"`
@@ -36,7 +39,7 @@ type Header struct {
 
 // Request is compatible with HTTP Server's Request output
 type Request struct {
-	Context any `json:"context,omitempty" configurable:"true" title:"Context" description:"Arbitrary context to pass through to output"`
+	Context Context `json:"context,omitempty" configurable:"true" title:"Context" description:"Arbitrary context to pass through to output"`
 
 	// Credentials - from edge config (e.g., inject component)
 	SigningSecret string `json:"signingSecret" configurable:"true" title:"Signing Secret" description:"Slack app signing secret for request verification"`
@@ -51,7 +54,7 @@ type Request struct {
 
 // Command is the parsed slash command
 type Command struct {
-	Context any `json:"context,omitempty" configurable:"true" title:"Context"`
+	Context Context `json:"context,omitempty" configurable:"true" title:"Context"`
 
 	// Original request context
 	ResponseURL string `json:"responseUrl" title:"Response URL" description:"URL to send delayed responses"`
@@ -82,7 +85,7 @@ type Command struct {
 
 // Error output
 type Error struct {
-	Context any     `json:"context,omitempty" configurable:"true" title:"Context"`
+	Context Context `json:"context,omitempty" configurable:"true" title:"Context"`
 	Error   string  `json:"error" title:"Error"`
 	Request Request `json:"request" title:"Request"`
 }
