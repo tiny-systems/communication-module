@@ -129,7 +129,7 @@ func (c *Component) Handle(ctx context.Context, handler module.Handler, port str
 	return fmt.Errorf("unknown port: %s", port)
 }
 
-func (c *Component) handleRequest(ctx context.Context, handler module.Handler, req Request) error {
+func (c *Component) handleRequest(ctx context.Context, handler module.Handler, req Request) any {
 	// Verify signature unless skipped
 	if !req.SkipVerify {
 		if err := verifySignature(req.SigningSecret, req.Headers, req.Body); err != nil {
@@ -146,13 +146,8 @@ func (c *Component) handleRequest(ctx context.Context, handler module.Handler, r
 	// Pass context through
 	cmd.Context = req.Context
 
-	// Emit the parsed command
-	if result := handler(ctx, CommandPort, cmd); result != nil {
-		if err, ok := result.(error); ok {
-			return err
-		}
-	}
-	return nil
+	// Emit the parsed command and return the response (for http-server)
+	return handler(ctx, CommandPort, cmd)
 }
 
 func verifySignature(signingSecret string, headers []Header, body string) error {
