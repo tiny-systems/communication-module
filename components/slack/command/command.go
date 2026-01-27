@@ -236,14 +236,16 @@ func parseCommand(body string) (Command, error) {
 	return cmd, nil
 }
 
-func (c *Component) handleError(ctx context.Context, handler module.Handler, req Request, errMsg string) error {
+func (c *Component) handleError(ctx context.Context, handler module.Handler, req Request, errMsg string) any {
 	if c.settings.EnableErrorPort {
-		_ = handler(ctx, ErrorPort, Error{
+		// IMPORTANT: Return the handler result to propagate responses back through the call chain.
+		// This is critical for blocking I/O patterns like HTTP Server which expects responses
+		// to flow back through the same handler chain that sent the request.
+		return handler(ctx, ErrorPort, Error{
 			Context: req.Context,
 			Error:   errMsg,
 			Request: req,
 		})
-		return nil
 	}
 	return errors.New(errMsg)
 }
