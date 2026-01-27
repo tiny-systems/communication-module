@@ -223,6 +223,8 @@ func parseCommand(body string) (Command, error) {
 	}
 
 	// Extract action and target for easy routing
+	// Always initialize ExtraArgs to empty slice (not nil) so expressions like length($.extraArgs) work
+	cmd.ExtraArgs = []string{}
 	if len(args) > 0 {
 		cmd.Action = args[0]
 	}
