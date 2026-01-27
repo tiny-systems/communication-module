@@ -8,7 +8,7 @@ require (
 	github.com/slack-go/slack v0.14.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.19.0
-	github.com/tiny-systems/module v0.1.259
+	github.com/tiny-systems/module v0.1.261
 	github.com/wneessen/go-mail v0.4.4
 )
 
@@ -205,5 +205,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
-
-replace github.com/spyzhov/ajson v0.9.4 => github.com/tiny-systems/ajson v0.1.4
