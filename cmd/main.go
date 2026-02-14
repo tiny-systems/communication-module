@@ -3,16 +3,19 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/rs/zerolog"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	_ "github.com/tiny-systems/communication-module/components/email/smtp"
-	_ "github.com/tiny-systems/communication-module/components/slack/command"
-	_ "github.com/tiny-systems/communication-module/components/slack/send"
-	"github.com/tiny-systems/module/cli"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/rs/zerolog"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/tiny-systems/module/cli"
+
+	_ "github.com/tiny-systems/communication-module/components/email/smtp"
+	_ "github.com/tiny-systems/communication-module/components/slack/command"
+	_ "github.com/tiny-systems/communication-module/components/slack/interaction"
+	_ "github.com/tiny-systems/communication-module/components/slack/send"
 )
 
 // RootCmd represents the base command when called without any subcommands
