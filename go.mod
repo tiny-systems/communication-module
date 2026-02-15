@@ -9,7 +9,7 @@ require (
 	github.com/slack-go/slack v0.14.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.19.0
-	github.com/tiny-systems/module v0.1.308
+	github.com/tiny-systems/module v0.1.323
 	github.com/wneessen/go-mail v0.4.4
 )
 
