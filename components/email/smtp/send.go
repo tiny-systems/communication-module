@@ -48,7 +48,6 @@ type ProtocolSettings struct {
 	Port     int    `json:"port" required:"true" title:"SMTP Port"`
 	Username string `json:"username" title:"SMTP username" required:"true"`
 	Password string `json:"password" title:"SMTP password" required:"true"`
-	Test     bool   `json:"test" format:"button" title:"Test connection" required:"true"`
 }
 
 type Response struct {
