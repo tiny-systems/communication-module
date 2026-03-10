@@ -1,5 +1,33 @@
-# Tiny Systems Communication module
-The module collects email, instant messengers and other components.
+# TinySystems Communication Module
+
+Messaging and notification components for Slack and email integrations.
+
+## Components
+
+| Component | Description |
+|-----------|-------------|
+| Slack Channel Sender | Send messages to Slack channels via webhook or API |
+| Slack Command | Receive incoming Slack slash command webhooks |
+| Slack Block Kit Interaction | Handle Slack Block Kit interactive payloads |
+| SMTP Email Sender | Send emails via SMTP with configurable templates |
+
+## Installation
+
+```shell
+helm repo add tinysystems https://tiny-systems.github.io/module/
+helm install communication-module tinysystems/tinysystems-operator \
+  --set controllerManager.manager.image.repository=ghcr.io/tiny-systems/communication-module
+```
+
+## Run locally
+
+```shell
+go run cmd/main.go run --name=communication-module --namespace=tinysystems --version=1.0.0
+```
+
+## Part of TinySystems
+
+This module is part of the [TinySystems](https://github.com/tiny-systems) platform -- a visual flow-based automation engine running on Kubernetes.
 
 ## License
 
