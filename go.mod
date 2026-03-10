@@ -1,6 +1,8 @@
 module github.com/tiny-systems/communication-module
 
-go 1.24.2
+go 1.25.0
+
+toolchain go1.25.5
 
 require (
 	github.com/goccy/go-json v0.10.2
@@ -9,7 +11,7 @@ require (
 	github.com/slack-go/slack v0.14.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/viper v1.19.0
-	github.com/tiny-systems/module v0.1.346
+	github.com/tiny-systems/module v0.1.357
 	github.com/wneessen/go-mail v0.4.4
 )
 
