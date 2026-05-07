@@ -64,16 +64,21 @@ func (t *Component) GetInfo() module.ComponentInfo {
 	}
 }
 
-func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) any {
-	if port == v1alpha1.SettingsPort {
-		in, ok := msg.(Settings)
-		if !ok {
-			return fmt.Errorf("invalid settings")
-		}
-		t.settings = in
-		return nil
+// OnSettings stores the component settings.
+func (t *Component) OnSettings(_ context.Context, msg any) error {
+	in, ok := msg.(Settings)
+	if !ok {
+		return fmt.Errorf("invalid settings")
 	}
+	t.settings = in
+	return nil
+}
 
+// Handle dispatches the RequestPort. System ports go through capabilities.
+func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) any {
+	if port != RequestPort {
+		return fmt.Errorf("unknown port %s", port)
+	}
 	in, ok := msg.(Request)
 	if !ok {
 		return fmt.Errorf("invalid message")
@@ -142,7 +147,10 @@ func (t *Component) Ports() []module.Port {
 	})
 }
 
-var _ module.Component = (*Component)(nil)
+var (
+	_ module.Component       = (*Component)(nil)
+	_ module.SettingsHandler = (*Component)(nil)
+)
 
 func init() {
 	registry.Register(&Component{})

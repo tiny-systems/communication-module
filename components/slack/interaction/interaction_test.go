@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tiny-systems/module/api/v1alpha1"
 )
 
 func TestParseInteraction(t *testing.T) {
@@ -179,9 +178,10 @@ func TestHandle(t *testing.T) {
 	comp := &Component{}
 
 	t.Run("settings port", func(t *testing.T) {
-		result := comp.Handle(context.Background(), nil, v1alpha1.SettingsPort, Settings{EnableErrorPort: true})
-		if result != nil {
-			t.Fatalf("expected nil, got %v", result)
+		// Settings is dispatched via the SettingsHandler capability, not Handle.
+		err := comp.OnSettings(context.Background(), Settings{EnableErrorPort: true})
+		if err != nil {
+			t.Fatalf("expected nil, got %v", err)
 		}
 		if !comp.settings.EnableErrorPort {
 			t.Fatal("settings not applied")
