@@ -120,19 +120,19 @@ func (c *Component) OnSettings(_ context.Context, msg any) error {
 }
 
 // Handle dispatches the RequestPort. System ports go through capabilities.
-func (c *Component) Handle(ctx context.Context, handler module.Handler, port string, msg any) any {
+func (c *Component) Handle(ctx context.Context, handler module.Handler, port string, msg any) module.Result {
 	if port != RequestPort {
-		return fmt.Errorf("unknown port: %s", port)
+		return module.Fail(fmt.Errorf("unknown port: %s", port))
 	}
 
 	in, ok := msg.(Request)
 	if !ok {
-		return fmt.Errorf("invalid request")
+		return module.Fail(fmt.Errorf("invalid request"))
 	}
 	return c.handleRequest(ctx, handler, in)
 }
 
-func (c *Component) handleRequest(ctx context.Context, handler module.Handler, req Request) any {
+func (c *Component) handleRequest(ctx context.Context, handler module.Handler, req Request) module.Result {
 	// Verify signature unless skipped
 	if !req.SkipVerify {
 		if err := verifySignature(req.SigningSecret, req.Headers, req.Body); err != nil {
@@ -241,7 +241,7 @@ func parseCommand(body string) (Command, error) {
 	return cmd, nil
 }
 
-func (c *Component) handleError(ctx context.Context, handler module.Handler, req Request, errMsg string) any {
+func (c *Component) handleError(ctx context.Context, handler module.Handler, req Request, errMsg string) module.Result {
 	if c.settings.EnableErrorPort {
 		// IMPORTANT: Return the handler result to propagate responses back through the call chain.
 		// This is critical for blocking I/O patterns like HTTP Server which expects responses
@@ -252,7 +252,7 @@ func (c *Component) handleError(ctx context.Context, handler module.Handler, req
 			Request: req,
 		})
 	}
-	return errors.New(errMsg)
+	return module.Fail(errors.New(errMsg))
 }
 
 func (c *Component) Ports() []module.Port {

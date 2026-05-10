@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/tiny-systems/module/module"
 )
 
 func TestParseInteraction(t *testing.T) {
@@ -191,10 +192,10 @@ func TestHandle(t *testing.T) {
 	t.Run("request port with skip verify", func(t *testing.T) {
 		var gotPort string
 		var gotMsg any
-		handler := func(ctx context.Context, port string, msg any) any {
+		handler := func(ctx context.Context, port string, msg any) module.Result {
 			gotPort = port
 			gotMsg = msg
-			return nil
+			return module.Result{}
 		}
 
 		body := `payload=` + urlEncode(`{"type":"block_actions","user":{"id":"U1","username":"test"},"channel":{"id":"C1"},"actions":[{"action_id":"logs","value":"pod1|ns1","type":"button"}],"response_url":"https://example.com","trigger_id":"t1"}`)
@@ -204,8 +205,8 @@ func TestHandle(t *testing.T) {
 			Body:       body,
 			Context:    map[string]string{"key": "val"},
 		})
-		if result != nil {
-			t.Fatalf("expected nil, got %v", result)
+		if err := result.Err(); err != nil {
+			t.Fatalf("expected no error, got %v", err)
 		}
 		if gotPort != InteractionPort {
 			t.Errorf("port = %q, want %q", gotPort, InteractionPort)
@@ -225,17 +226,17 @@ func TestHandle(t *testing.T) {
 	t.Run("error port enabled", func(t *testing.T) {
 		comp.settings.EnableErrorPort = true
 		var gotPort string
-		handler := func(ctx context.Context, port string, msg any) any {
+		handler := func(ctx context.Context, port string, msg any) module.Result {
 			gotPort = port
-			return nil
+			return module.Result{}
 		}
 
 		result := comp.Handle(context.Background(), handler, RequestPort, Request{
 			SkipVerify: true,
 			Body:       "no-payload-here",
 		})
-		if result != nil {
-			t.Fatalf("expected nil (handler returned nil), got %v", result)
+		if err := result.Err(); err != nil {
+			t.Fatalf("expected no error (handler returned ok), got %v", err)
 		}
 		if gotPort != ErrorPort {
 			t.Errorf("port = %q, want %q", gotPort, ErrorPort)
@@ -249,17 +250,14 @@ func TestHandle(t *testing.T) {
 			SkipVerify: true,
 			Body:       "no-payload-here",
 		})
-		if result == nil {
+		if result.Err() == nil {
 			t.Fatal("expected error, got nil")
-		}
-		if _, ok := result.(error); !ok {
-			t.Fatalf("expected error type, got %T", result)
 		}
 	})
 
 	t.Run("unknown port", func(t *testing.T) {
 		result := comp.Handle(context.Background(), nil, "unknown", nil)
-		if result == nil {
+		if result.Err() == nil {
 			t.Fatal("expected error for unknown port")
 		}
 	})

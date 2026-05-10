@@ -130,20 +130,20 @@ func (t *Component) OnSettings(_ context.Context, msg any) error {
 }
 
 // Handle dispatches the RequestPort. System ports go through capabilities.
-func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) any {
+func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) module.Result {
 	if port != RequestPort {
-		return fmt.Errorf("unknown port %s", port)
+		return module.Fail(fmt.Errorf("unknown port %s", port))
 	}
 
 	sendMsg, ok := msg.(Request)
 	if !ok {
-		return fmt.Errorf("invalid message")
+		return module.Fail(fmt.Errorf("invalid message"))
 	}
 
 	messageID, err := t.send(ctx, sendMsg)
 	if err != nil {
 		if !t.settings.EnableErrorPort {
-			return err
+			return module.Fail(err)
 		}
 		return responseHandler(ctx, ErrorPort, Error{
 			Context:   sendMsg.Context,
@@ -158,8 +158,7 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 			MessageID: messageID,
 		})
 	}
-	// send email here
-	return err
+	return module.Result{}
 }
 
 func (t *Component) Ports() []module.Port {

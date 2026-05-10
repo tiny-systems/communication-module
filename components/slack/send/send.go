@@ -75,13 +75,13 @@ func (t *Component) OnSettings(_ context.Context, msg any) error {
 }
 
 // Handle dispatches the RequestPort. System ports go through capabilities.
-func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) any {
+func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, port string, msg interface{}) module.Result {
 	if port != RequestPort {
-		return fmt.Errorf("unknown port %s", port)
+		return module.Fail(fmt.Errorf("unknown port %s", port))
 	}
 	in, ok := msg.(Request)
 	if !ok {
-		return fmt.Errorf("invalid message")
+		return module.Fail(fmt.Errorf("invalid message"))
 	}
 
 	client := slack.New(in.Message.SlackToken)
@@ -89,7 +89,7 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 
 	if err != nil {
 		if !t.settings.EnableErrorPort {
-			return err
+			return module.Fail(err)
 		}
 		return responseHandler(ctx, ErrorPort, Error{
 			Context: in.Context,
@@ -103,8 +103,7 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 			Sent:    in.Message,
 		})
 	}
-	// send email here
-	return err
+	return module.Result{}
 }
 
 func (t *Component) Ports() []module.Port {
