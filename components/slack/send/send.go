@@ -139,7 +139,7 @@ func (t *Component) Ports() []module.Port {
 	}
 	return append(ports, module.Port{
 		Position:      module.Bottom,
-		Name:          ResponsePort,
+		Name:          ErrorPort,
 		Label:         "Error",
 		Source:        true,
 		Configuration: Error{},
