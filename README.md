@@ -6,10 +6,10 @@ Messaging and notification components for Slack and email integrations.
 
 | Component | Description |
 |-----------|-------------|
-| Slack Channel Sender | Send messages to Slack channels via webhook or API |
+| Slack Channel Sender | Send messages to Slack channels via the Slack Web API |
 | Slack Command | Receive incoming Slack slash command webhooks |
 | Slack Block Kit Interaction | Handle Slack Block Kit interactive payloads |
-| SMTP Email Sender | Send emails via SMTP with configurable templates |
+| SMTP Email Sender | Send emails via SMTP |
 
 ## Installation
 

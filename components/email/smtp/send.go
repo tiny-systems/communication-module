@@ -3,6 +3,9 @@ package smtp
 import (
 	"context"
 	"fmt"
+	netmail "net/mail"
+	"os"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/tiny-systems/module/api/v1alpha1"
@@ -107,6 +110,11 @@ func (t *Component) send(ctx context.Context, sendMsg Request) (string, error) {
 	m.Subject(sendMsg.Subject)
 	m.SetBodyString(mail.ContentType(sendMsg.ContentType), sendMsg.Body)
 
+	// Set the generated ID as the actual Message-ID header of the outgoing
+	// mail, so the ID we return really identifies the message.
+	id := fmt.Sprintf("%s@%s", messageID.String(), messageIDDomain(sendMsg.From))
+	m.SetMessageIDWithValue(id)
+
 	defer func() {
 		_ = client.Close()
 	}()
@@ -116,7 +124,21 @@ func (t *Component) send(ctx context.Context, sendMsg Request) (string, error) {
 		return "", err
 	}
 
-	return messageID.String(), nil
+	return id, nil
+}
+
+// messageIDDomain derives the domain part of a Message-ID from the From
+// address, falling back to the local hostname.
+func messageIDDomain(from string) string {
+	if addr, err := netmail.ParseAddress(from); err == nil {
+		if at := strings.LastIndex(addr.Address, "@"); at != -1 && at+1 < len(addr.Address) {
+			return addr.Address[at+1:]
+		}
+	}
+	if hostname, err := os.Hostname(); err == nil && hostname != "" {
+		return hostname
+	}
+	return "localhost"
 }
 
 // OnSettings stores the component settings.

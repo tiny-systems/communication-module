@@ -2,6 +2,7 @@ package send
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/slack-go/slack"
@@ -26,8 +27,9 @@ type Context any
 
 type Message struct {
 	ChannelID  string `json:"channelID" required:"true" minLength:"1" title:"ChannelID" description:""`
-	SlackToken string `json:"slackToken" required:"true" minLength:"1" title:"Slack token" description:"Bot User OAuth Token"`
+	SlackToken string `json:"slackToken" required:"true" minLength:"1" format:"password" title:"Slack token" description:"Bot User OAuth Token"`
 	Text       string `json:"text" required:"true" minLength:"1" title:"Message text" format:"textarea"`
+	ThreadTs   string `json:"threadTs,omitempty" title:"Thread ts" description:"Timestamp (ts) of a parent message — when set, the message is posted as a reply in that thread"`
 }
 
 type Request struct {
@@ -38,6 +40,8 @@ type Request struct {
 type Response struct {
 	Request Request `json:"request"`
 	Sent    Message `json:"sent"`
+	Channel string  `json:"channel" title:"Channel" description:"Channel ID the message was posted to"`
+	Ts      string  `json:"ts" title:"Ts" description:"Message timestamp — pass as thread_ts to reply in a thread"`
 }
 
 type Error struct {
@@ -85,9 +89,18 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 	}
 
 	client := slack.New(in.Message.SlackToken)
-	_, _, _, err := client.SendMessageContext(ctx, in.Message.ChannelID, slack.MsgOptionText(in.Message.Text, true))
+	opts := []slack.MsgOption{slack.MsgOptionText(in.Message.Text, true)}
+	if in.Message.ThreadTs != "" {
+		opts = append(opts, slack.MsgOptionTS(in.Message.ThreadTs))
+	}
+	channelID, ts, _, err := client.SendMessageContext(ctx, in.Message.ChannelID, opts...)
 
 	if err != nil {
+		var rateLimited *slack.RateLimitedError
+		if errors.As(err, &rateLimited) {
+			// Slack asked us to back off — a retry can clear it.
+			err = module.Retryable(err)
+		}
 		if !t.settings.EnableErrorPort {
 			return module.Fail(err)
 		}
@@ -101,6 +114,8 @@ func (t *Component) Handle(ctx context.Context, responseHandler module.Handler, 
 		return responseHandler(ctx, ResponsePort, Response{
 			Request: in,
 			Sent:    in.Message,
+			Channel: channelID,
+			Ts:      ts,
 		})
 	}
 	return module.Result{}
