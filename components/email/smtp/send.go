@@ -2,8 +2,11 @@ package smtp
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 	netmail "net/mail"
+	"net/textproto"
 	"os"
 	"strings"
 
@@ -98,7 +101,7 @@ func (t *Component) send(ctx context.Context, sendMsg Request) (string, error) {
 
 	err = client.DialWithContext(ctx)
 	if err != nil {
-		return "", err
+		return "", classifyErr(err)
 	}
 
 	m := mail.NewMsg()
@@ -121,10 +124,43 @@ func (t *Component) send(ctx context.Context, sendMsg Request) (string, error) {
 
 	err = client.Send(m)
 	if err != nil {
-		return "", err
+		return "", classifyErr(err)
 	}
 
 	return id, nil
+}
+
+// classifyErr wraps err with the SDK retryability marking derived from the
+// SMTP conversation: 4xx replies (greylisting, mailbox busy, temporarily
+// rejected) and network/timeout failures are transient, 5xx replies (no such
+// user, auth rejected, policy) are permanent. Failures with neither a reply
+// code nor a network cause are left unmarked, so they default to no-retry —
+// re-sending a mail whose delivery state is unknown risks a duplicate.
+func classifyErr(err error) error {
+	var sendErr *mail.SendError
+	if errors.As(err, &sendErr) {
+		switch {
+		case sendErr.IsTemp():
+			return module.Retryable(err)
+		case sendErr.ErrorCode() >= 500:
+			return module.Permanent(err)
+		}
+		return err
+	}
+	var tpErr *textproto.Error
+	if errors.As(err, &tpErr) {
+		// Dial-phase SMTP reply (greeting, STARTTLS, AUTH): 421/4xx is the
+		// server asking us to come back later, 5xx (535 auth failed) is final.
+		if tpErr.Code >= 400 && tpErr.Code < 500 {
+			return module.Retryable(err)
+		}
+		return module.Permanent(err)
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) || errors.Is(err, context.DeadlineExceeded) {
+		return module.Retryable(err)
+	}
+	return err
 }
 
 // messageIDDomain derives the domain part of a Message-ID from the From
